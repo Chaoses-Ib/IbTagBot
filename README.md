@@ -1,4 +1,4 @@
-# IbTagBot
+# [@IbTagBot](https://t.me/IbTagBot)
 Telegram 标签分词机器人
 
 ## 这个机器人能做什么？
