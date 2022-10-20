@@ -1,0 +1,3 @@
+regex
+--pre python-telegram-bot ~= 20.0
+jieba ~= 0.42.1
