@@ -1,1 +1,5 @@
 token.txt
+
+# pyrogram
+*.session
+*.session-journal

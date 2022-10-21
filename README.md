@@ -20,6 +20,8 @@ Telegram 标签分词机器人
 git clone https://github.com/Chaoses-Ib/IbTagBot.git
 cd IbTagBot
 pip3 install -r requirements.txt
-echo [YOUR_BOT_TOKEN] > token.txt
+echo [YOUR_API_ID] >> token.txt
+echo [YOUR_API_HASH] >> token.txt
+echo [YOUR_BOT_TOKEN] >> token.txt
 python3 bot.py
 ```

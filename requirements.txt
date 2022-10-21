@@ -1,3 +1,8 @@
 regex
---pre python-telegram-bot ~= 20.0
+pyrogram ~= 2.0
+# https://docs.pyrogram.org/topics/speedups
+tgcrypto ~= 1.2
 jieba ~= 0.42.1
+
+# uvloop does not support Windows at the moment
+uvloop ~= 0.17.0
