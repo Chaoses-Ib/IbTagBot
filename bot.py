@@ -45,7 +45,13 @@ async def tag_message_handler(client: tg.Client, message: tg.types.Message):
     html = message.text.html if message.text is not None else message.caption.html
 
     def segment(match: regex.Match):
-        return f'''##{match[1]}<i>({ ' '.join(f'#{word}' for word in jieba.cut(match[1])) })</i>'''
+        # Why '<i> </i>' and `f'<i>#{word}</i>'`?
+        # Becuase if we use `f'#{word}'`:
+        # When editing message, `##ab<i>(#a #b)</i>` will be formatted to `##ab<i>(</i><i>#a</i> <i>#b</i>)</i>`.
+        # On our second edit of the message, what we received is `##ab<i>(</i><i>#a</i><i> </i><i>#b</i><i>)</i>` and what we generated is `##ab<i>(#a #b)</i>`. Then new_html != html, and we will get a Bad Request from Telegram:
+        # pyrogram.errors.exceptions.bad_request_400.MessageNotModified: Telegram says: [400 MESSAGE_NOT_MODIFIED] - The message was not modified because you tried to edit it using the same content (caused by "messages.EditMessage")
+
+        return f'''##{match[1]}<i>(</i>{ '<i> </i>'.join(f'<i>#{word}</i>' for word in jieba.cut(match[1])) }<i>)</i>'''
 
     # Which characters are available?
     # For ASCII they are: [A-Za-z][A-Za-z0-9]*
@@ -63,6 +69,9 @@ async def tag_message_handler(client: tg.Client, message: tg.types.Message):
     # HTML: ##ab...<i>(</i><i>#a</i><i> </i><i>#b</i><i> </i><i>...</i><i>)</i>
     # Markdown: ##ab...__(____#a____ ____#b____ ____...____)__
     new_html = regex.sub(r'##([\p{XID_Start}][\p{XID_Continue}]*)(?: |<i>\([^\)]*\)</i>)?', segment, html)
+
+    if new_html == html:
+        return
 
     try:
         await message.edit(new_html, tg.enums.ParseMode.HTML)
