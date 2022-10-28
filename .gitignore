@@ -1,5 +1,12 @@
 token.txt
 
+private/
+*.private
+*.private.*
+
+# Python
+__pycache__/
+
 # pyrogram
 *.session
 *.session-journal

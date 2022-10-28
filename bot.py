@@ -32,6 +32,32 @@ async def help_handler(client: tg.Client, message: tg.types.Message):
     tg.enums.ParseMode.MARKDOWN)
 
 
+@app.on_inline_query()
+async def answer(client: tg.Client, inline_query: tg.types.InlineQuery):
+    def to_tag(match: regex.Match):
+        if match[0][0] == '#':
+            return ' '.join('#' + word for word in jieba.cut(match[0][1:]))
+        else:
+            return '#' + match[0]
+    answer = regex.sub(r'\S+', to_tag, inline_query.query)
+
+    # tg.errors.exceptions.ArticleTitleEmpty
+    if answer == '':
+        answer = '-'
+
+    #print(inline_query.query, answer)
+    
+    await inline_query.answer(
+        results=[
+            tg.types.InlineQueryResultArticle(
+                title=answer,
+                input_message_content=tg.types.InputTextMessageContent(answer)
+            )
+        ],
+        cache_time=24 * 3600
+    )
+
+
 tag_message_filters = (
     (tg.filters.channel | tg.filters.group)
     & (tg.filters.text | tg.filters.caption)
@@ -53,8 +79,8 @@ async def tag_message_handler(client: tg.Client, message: tg.types.Message):
 
         return f'''##{match[1]}<i>(</i>{ '<i> </i>'.join(f'<i>#{word}</i>' for word in jieba.cut(match[1])) }<i>)</i>'''
 
-    # Which characters are available?
-    # For ASCII they are: [A-Za-z][A-Za-z0-9]*
+    # Which characters are available in tags?
+    # For ASCII they are: [A-Za-z][A-Za-z0-9]{0,255}
     '''
     #  #! #" ## #$ #% #& #' #( #) #* #+ #, #- #. #/ 
     #0 #1 #2 #3 #4 #5 #6 #7 #8 #9 #: #; #< #= #> #? 
@@ -63,7 +89,7 @@ async def tag_message_handler(client: tg.Client, message: tg.types.Message):
     #` #a #b #c #d #e #f #g #h #i #j #k #l #m #n #o 
     #p #q #r #s #t #u #v #w #x #y #z #{ #| #} #~ 
     '''
-    # For Unicode they are probably: [\p{XID_Start}][\p{XID_Continue}]*
+    # For Unicode they are probably: [\p{XID_Start}][\p{XID_Continue}]{0,255}
     # Because `re` doesn't support Unicode properties `\p` (see https://docs.python.org/3/library/re.html), we use `regex` instead.
 
     # HTML: ##ab...<i>(</i><i>#a</i><i> </i><i>#b</i><i> </i><i>...</i><i>)</i>
