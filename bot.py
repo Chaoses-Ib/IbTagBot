@@ -18,44 +18,43 @@ with open('token.txt', 'r') as f:
 @app.on_message(tg.filters.command(['start', 'help']))
 async def help_handler(client: tg.Client, message: tg.types.Message):
     await message.reply(
-'''[IbTagBot](https://github.com/Chaoses-Ib/IbTagBot) 是一个用于提高标签输入效率的机器人，它能够自动对频道或群组消息中的标签进行分词。
-
-例如，当发送以下消息时：
-
-想看##白发红眼美少女 吗？
-
-它将被机器人自动编辑为：
-
-想看##白发红眼美少女__(#白发 #红眼 #美少女)__吗？
-
-你也可以对机器人编辑后的消息进行二次编辑，括号中的内容会被自动更新。''',
+'''[IbTagBot：Telegram 标签分词机器人](https://github.com/Chaoses-Ib/IbTagBot)''',
     tg.enums.ParseMode.MARKDOWN)
 
 
 @app.on_inline_query()
 async def answer(client: tg.Client, inline_query: tg.types.InlineQuery):
-    def to_tag(match: regex.Match):
-        if match[0][0] == '#':
-            return ' '.join('#' + word for word in jieba.cut(match[0][1:]))
-        else:
-            return '#' + match[0]
-    answer = regex.sub(r'\S+', to_tag, inline_query.query)
-
     # tg.errors.exceptions.ArticleTitleEmpty
-    if answer == '':
-        answer = '-'
+    if inline_query.query == '':
+        return
 
-    #print(inline_query.query, answer)
+    match = regex.search('\s|$', inline_query.query)
+    first_word = inline_query.query[:match.start()]
+    rest = inline_query.query[match.start():]  # including the space
+
+    def to_tag(word, force_segment=False):
+        if word[0] == '#':
+            return ' '.join('#' + word for word in jieba.cut(word[1:]))
+        elif force_segment:
+            return ' '.join('#' + word for word in jieba.cut(word))
+        else:
+            return '#' + word
     
-    await inline_query.answer(
-        results=[
-            tg.types.InlineQueryResultArticle(
-                title=answer,
-                input_message_content=tg.types.InputTextMessageContent(answer)
-            )
-        ],
-        cache_time=24 * 3600
-    )
+    first_word_tags = to_tag(first_word)
+    first_word_segment_tags = to_tag(first_word, True)
+    rest_tags = regex.sub(r'\S+', lambda m: to_tag(m[0]), rest)
+    
+    results = [tg.types.InlineQueryResultArticle(
+                title=first_word_tags + rest_tags,
+                input_message_content=tg.types.InputTextMessageContent(first_word_tags + rest_tags)
+            )]
+    if first_word_tags != first_word_segment_tags:
+        results.append(tg.types.InlineQueryResultArticle(
+            title=first_word_segment_tags + rest_tags,
+            input_message_content=tg.types.InputTextMessageContent(first_word_segment_tags + rest_tags)
+        ))
+    
+    await inline_query.answer(results=results, cache_time=5 * 60)
 
 
 tag_message_filters = (
